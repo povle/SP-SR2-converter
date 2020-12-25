@@ -1,11 +1,22 @@
 import xml.etree.ElementTree as ET
 import uuid
+import numpy as np
+from transforms3d.euler import euler2mat, mat2euler
 
 def parse_numstr(string: str):
     return [float(x) for x in string.split(',')]
 
 def create_numstr(floats: list):
     return ','.join([str(round(x, 8)) for x in floats])
+
+
+ROT = np.array([[1, 0, 0], [0, 0, -1], [0, 1, 0]])
+def rotate(angles: list):
+    angles = [n * np.pi/180 for n in angles]
+    M = euler2mat(*[angles[n] for n in (2, 0, 1)], 'szxy')
+    angles = mat2euler(np.matmul(M, ROT), 'szxy')
+    angles = [angles[n] * 180/np.pi for n in (1, 2, 0)]
+    return angles
 
 
 '''<Craft name='BL-S2GM4'
@@ -31,7 +42,7 @@ def create_numstr(floats: list):
           price='1889707'
           xmlVersion='5'>'''
 
-tree = ET.parse('./test_craft.xml')
+tree = ET.parse('./test_crafts/test_craft.xml')
 craft = tree.getroot()
 craft.tag = 'Craft'
 craft.attrib.pop('url')
@@ -90,16 +101,13 @@ for part in list(parts):
 
     position = parse_numstr(part.get('position'))
     position = [2 * x for x in position]
-    #position[1], position[2] = position[2], position[1]
-    #position[0] *= -1
+    # position[1], position[2] = position[2], position[1]
+    # position[2] *= -1
     raw_position = create_numstr(position)
     part.set('position', raw_position)
 
     rotation = parse_numstr(part.get('rotation'))
-    rotation[1], rotation[2] = rotation[2], rotation[1]
-    rotation[0] -= 90
-    rotation[1] += 180
-    #rotation[0] *= -1
+    rotation = rotate(rotation)
     part.set('rotation', create_numstr(rotation))
 
     materials = part.get('materials')
@@ -132,7 +140,7 @@ for part in list(parts):
     offset = parse_numstr(fuselage.get('offset'))
     offset = [x/2 for x in offset]
     offset[1], offset[2] = offset[2], offset[1]
-    offset[2] *= -1
+    offset[0] *= -1
     fuselage.set('offset', create_numstr(offset))
     for x in ['version', 'rearScale', 'frontScale', 'buoyancy', 'deadWeight', 'fuelPercentage', 'cornerTypes', 'scale', 'autoSizeOnConnected']:
         fuselage.attrib.pop(x, None)
@@ -215,4 +223,4 @@ themes.append(theme)
 
 ET.SubElement(craft, 'Symmetry')
 
-tree.write('test/test40.xml', encoding='utf-8', xml_declaration=True)
+tree.write('test_results/test50.xml', encoding='utf-8', xml_declaration=True)
