@@ -42,7 +42,7 @@ def rotate(angles: list):
           price='1889707'
           xmlVersion='5'>'''
 
-tree = ET.parse('./test_crafts/test_craft.xml')
+tree = ET.parse('./test_crafts/TestCorners.xml')
 craft = tree.getroot()
 craft.tag = 'Craft'
 craft.attrib.pop('url')
@@ -75,7 +75,7 @@ parts = assembly.find('Parts')
          materials='0'>
         <FuelTank.State fuel='0' capacity='0' />
         <Fuselage.State version='2' frontScale='1,0.25' rearScale='1,0.25' offset='0,0,3' deadWeight='0' buoyancy='0' fuelPercentage='0' cornerTypes='0,0,0,0,0,0,0,0' />
-      </Part>'''
+      </Part>'''                                                                                                                                    #f1f2f3f4b1b2b3b4
 
 '''<Part id='3'
          partType='Fuselage1'
@@ -85,9 +85,18 @@ parts = assembly.find('Parts')
          materials='0,0,2,3,4'>
         <Drag drag='0.07605563,0,0.8295473,0.9772433,0.6901614,0.7341061' area='0.4503731,0,1.069636,1.210377,0.9716101,1.036384' />
         <Config massScale='0' />
-        <Fuselage bottomScale='0.725,0.675' fuelPercentage='0' offset='0,0.4500164,5.960464E-08' topScale='0.8,0.8' />
-        <FuelTank capacity='2184337' fuelType='Battery' />
+        <Fuselage bottomScale='0.725,0.675' fuelPercentage='0' cornerRadiuses="0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8" offset='0,0.4500164,5.960464E-08' topScale='0.8,0.8' />
+        <FuelTank capacity='2184337' fuelType='Battery' />                    # f1  f2  f3  f4  b1  b2  b3  b4
       </Part>'''
+# 0 = hard -> 0.0
+# 1 = smooth -> 0.4
+# 2 = curved -> 1.0*
+# 3 = circular -> 1.0
+# f1 -> f3
+# f2 -> f2
+# f3 -> f1
+# f4 -> f4
+
 part_ids = set()
 for part in list(parts):
     if part.get('partType') != 'Fuselage-Body-1':
@@ -136,6 +145,14 @@ for part in list(parts):
     top_scale = parse_numstr(raw_top_scale)
     top_scale = [x/2 for x in top_scale]
     fuselage.set('topScale', create_numstr(top_scale))
+
+    corner_tr = [0.0, 0.4, 1.0, 1.0]
+    raw_corner_types = fuselage.get('cornerTypes')
+    corner_types = parse_numstr(raw_corner_types)
+    corner_types = [corner_tr[int(n)] for n in corner_types]
+    corner_types[0], corner_types[2] = corner_types[2], corner_types[0]
+    corner_types[4], corner_types[6] = corner_types[6], corner_types[4]
+    fuselage.set('cornerRadiuses', create_numstr(corner_types))
 
     offset = parse_numstr(fuselage.get('offset'))
     offset = [x/2 for x in offset]
@@ -223,4 +240,4 @@ themes.append(theme)
 
 ET.SubElement(craft, 'Symmetry')
 
-tree.write('test_results/test50.xml', encoding='utf-8', xml_declaration=True)
+tree.write('test_results/test53.xml', encoding='utf-8', xml_declaration=True)
