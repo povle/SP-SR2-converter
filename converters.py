@@ -56,6 +56,7 @@ class FuselageConverter(PartConverter):
     def __init__(self):
         super().__init__(part_type='Fuselage1')
         self.rotation_matrix = np.array([[1, 0, 0], [0, 0, -1], [0, 1, 0]])
+        self.attribs.append('texture')
 
     def rotate(self, angles: list):
         angles = [n * np.pi/180 for n in angles]
@@ -65,6 +66,8 @@ class FuselageConverter(PartConverter):
         return angles
 
     def convert_specific(self, part: ET.Element):
+        part.set('texture', 'Default')
+
         rotation = parse_numstr(part.get('rotation'))
         rotation = self.rotate(rotation)
         part.set('rotation', create_numstr(rotation))
