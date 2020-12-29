@@ -117,8 +117,7 @@ class NoseConeConverter(FuselageConverter):
         fuselage = part.find('Fuselage')
 
         top_scale = fuselage.get('topScale')
-        bottom_scale = fuselage.get('bottomScale')
-        fuselage.set('topScale', bottom_scale)
+        fuselage.set('topScale', '0,0')
         fuselage.set('bottomScale', top_scale)
 
         corner_radiuses = parse_numstr(fuselage.get('cornerRadiuses'))
