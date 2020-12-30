@@ -4,8 +4,10 @@ from utils import parse_numstr, create_numstr
 from converters import FuselageConverter, WingConverter, NoseConeConverter
 from command_pod import command_pod
 
-INPUT_PATH = './test_crafts/Test Nosecones.xml'
-OUTPUT_PATH = './test_results/test61.xml'
+SCALE = 1
+
+INPUT_PATH = 'test_crafts/Bell X-1.xml'
+OUTPUT_PATH = './test_results/test68.xml'
 
 tree = ET.parse(INPUT_PATH)
 craft = tree.getroot()
@@ -32,9 +34,9 @@ craft.set('initialBoundsMax', raw_boundsmax)
 assembly = craft.find('Assembly')
 parts = assembly.find('Parts')
 
-converters = {'Fuselage-Body-1': FuselageConverter(),
-              'Wing-3': WingConverter(),
-              'Fuselage-Cone-1': NoseConeConverter()}
+converters = {'Fuselage-Body-1': FuselageConverter(scale=SCALE),
+              'Wing-3': WingConverter(scale=SCALE),
+              'Fuselage-Cone-1': NoseConeConverter(scale=SCALE)}
 part_ids = set()
 for part in list(parts):
     if part.get('partType') not in converters:
@@ -90,5 +92,4 @@ themes = ET.SubElement(craft, 'Themes')
 themes.append(theme)
 
 ET.SubElement(craft, 'Symmetry')
-
 tree.write(OUTPUT_PATH, encoding='utf-8', xml_declaration=True)

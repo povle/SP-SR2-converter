@@ -6,20 +6,21 @@ from utils import parse_numstr, create_numstr
 
 
 class PartConverter(ABC):
-    def __init__(self, part_type):
+    def __init__(self, part_type, scale):
         self.partType = part_type
+        self.scale = scale
         self.attribs = ['id', 'partType', 'position',
                         'rotation', 'commandPodId', 'materials']
 
-    @staticmethod
-    def convert_common(part: ET.Element):
+    def convert_common(self, part: ET.Element):
         """Converts parameters relevant to all parts"""
         part.set('commandPodId', '0')
 
-        position = parse_numstr(part.get('position'))
-        position = [2 * x for x in position]
-        raw_position = create_numstr(position)
-        part.set('position', raw_position)
+        if self.scale != 1:
+            position = parse_numstr(part.get('position'))
+            position = [self.scale * x for x in position]
+            raw_position = create_numstr(position)
+            part.set('position', raw_position)
 
         materials = part.get('materials')
         part.set('materials', ','.join(materials.split(',')[0:1] * 5))
@@ -53,8 +54,8 @@ class PartConverter(ABC):
 
 
 class FuselageConverter(PartConverter):
-    def __init__(self):
-        super().__init__(part_type='Fuselage1')
+    def __init__(self, scale):
+        super().__init__(part_type='Fuselage1', scale=scale)
         self.rotation_matrix = np.array([[1, 0, 0], [0, 0, -1], [0, 1, 0]])
         self.attribs.append('texture')
 
@@ -81,12 +82,12 @@ class FuselageConverter(PartConverter):
 
         raw_bottom_scale = fuselage.get('rearScale')
         bottom_scale = parse_numstr(raw_bottom_scale)
-        bottom_scale = [x/2 for x in bottom_scale]
+        bottom_scale = [self.scale * x/4 for x in bottom_scale]
         fuselage.set('bottomScale', create_numstr(bottom_scale))
 
         raw_top_scale = fuselage.get('frontScale')
         top_scale = parse_numstr(raw_top_scale)
-        top_scale = [x/2 for x in top_scale]
+        top_scale = [self.scale * x/4 for x in top_scale]
         fuselage.set('topScale', create_numstr(top_scale))
 
         corner_tr = [0.0, 0.4, 1.0, 1.0]
@@ -98,7 +99,7 @@ class FuselageConverter(PartConverter):
         fuselage.set('cornerRadiuses', create_numstr(corner_types))
 
         offset = parse_numstr(fuselage.get('offset'))
-        offset = [x/2 for x in offset]
+        offset = [self.scale * x/4 for x in offset]
         offset[1], offset[2] = offset[2], offset[1]
         offset[0] *= -1
         fuselage.set('offset', create_numstr(offset))
@@ -109,8 +110,8 @@ class FuselageConverter(PartConverter):
             fuselage.attrib.pop(x, None)
 
 class NoseConeConverter(FuselageConverter):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, scale):
+        super().__init__(scale=scale)
         self.partType = 'NoseCone1'
         self.rotation_matrix = np.array([[-1, 0, 0], [0, 0, -1], [0, -1, 0]])
 
@@ -134,8 +135,8 @@ class NoseConeConverter(FuselageConverter):
         fuselage.set('offset', create_numstr(offset))
 
 class WingConverter(PartConverter):
-    def __init__(self):
-        super().__init__(part_type='Wing1')
+    def __init__(self, scale):
+        super().__init__(part_type='Wing1', scale=scale)
 
     def convert_specific(self, part: ET.Element):
         tank = part.find('FuelTank.State')
@@ -143,27 +144,25 @@ class WingConverter(PartConverter):
 
         wing = part.find('Wing.State')
         wing.tag = 'Wing'
-        wing_inverted = wing.get('inverted', 'false') == 'true'
 
-        for attrib_name in ('rootLeadingOffset', 'rootTrailingOffset',
-                            'tipLeadingOffset', 'tipPosition', 'tipTrailingOffset'):
-            raw_attrib = wing.get(attrib_name)
-            attrib_val = parse_numstr(raw_attrib)
-            attrib_val = [x*2 for x in attrib_val]
-            wing.set(attrib_name, create_numstr(attrib_val))
+        if self.scale != 1:
+            for attrib_name in ('rootLeadingOffset', 'rootTrailingOffset',
+                                'tipLeadingOffset', 'tipPosition', 'tipTrailingOffset'):
+                raw_attrib = wing.get(attrib_name)
+                attrib_val = parse_numstr(raw_attrib)
+                attrib_val = [self.scale * x for x in attrib_val]
+                wing.set(attrib_name, create_numstr(attrib_val))
 
         control_surfaces = wing.findall('ControlSurface')
         for surface in control_surfaces:
             inp = surface.get('inputId')
             surface.set('input', inp)
             surface.attrib.pop('inputId', None)
-            if wing_inverted:
-                surface_inverted = surface.get('invert', 'false') == 'true'
-                surface.set('invert', str(not surface_inverted).casefold())
-            for attrib_name in ('start', 'end'):
-                raw_attrib = surface.get(attrib_name)
-                attrib_val = parse_numstr(raw_attrib)
-                attrib_val = [int(x*2) for x in attrib_val]
-                surface.set(attrib_name, create_numstr(attrib_val))
+            if self.scale != 1:
+                for attrib_name in ('start', 'end'):
+                    raw_attrib = surface.get(attrib_name)
+                    attrib_val = parse_numstr(raw_attrib)
+                    attrib_val = [int(self.scale * x) for x in attrib_val]
+                    surface.set(attrib_name, create_numstr(attrib_val))
             wing.remove(surface)
         part.extend(control_surfaces)
