@@ -11,21 +11,16 @@ class PartConverter(ABC):
         self.scale = scale
         self.attribs = ['id', 'partType', 'position',
                         'rotation', 'commandPodId', 'materials']
+        self.prerotation_matrix = None
 
-    def convert_common(self, part: ET.Element):
-        """Converts parameters relevant to all parts"""
-        part.set('commandPodId', '0')
-
-        if self.scale != 1:
-            position = parse_numstr(part.get('position'))
-            position = [self.scale * x for x in position]
-            raw_position = create_numstr(position)
-            part.set('position', raw_position)
-
-        materials = part.get('materials')
-        part.set('materials', ','.join(materials.split(',')[0:1] * 5))
-
-        ET.SubElement(part, 'Config')
+    def prerotate(self, part: ET.Element):
+        """Prerotate the part to match the orientation"""
+        angles = parse_numstr(part.get('rotation'))
+        angles = [n * np.pi/180 for n in angles]
+        M = euler2mat(*[angles[n] for n in (2, 0, 1)], 'szxy')
+        angles = mat2euler(np.matmul(M, self.prerotation_matrix), 'szxy')
+        angles = [angles[n] * 180/np.pi for n in (1, 2, 0)]
+        part.set('rotation', create_numstr(angles))
 
     @staticmethod
     def add_drag(part: ET.Element):
@@ -35,6 +30,27 @@ class PartConverter(ABC):
         area = [1.5*x for x in drag]
         raw_area = create_numstr(area)
         ET.SubElement(part, 'Drag', {'drag': raw_drag, 'area': raw_area})
+
+    def convert_common(self, part: ET.Element):
+        """Converts parameters relevant to all parts"""
+        part.set('commandPodId', '0')
+        part.set('partType', self.partType)
+
+        if self.scale != 1:
+            position = parse_numstr(part.get('position'))
+            position = [self.scale * x for x in position]
+            raw_position = create_numstr(position)
+            part.set('position', raw_position)
+
+        if self.prerotation_matrix is not None:
+            self.prerotate(part)
+
+        materials = part.get('materials')
+        part.set('materials', ','.join(materials.split(',')[0:1] * 5))
+
+        ET.SubElement(part, 'Config')
+
+        self.add_drag(part)
 
     def convert_specific(self, part: ET.Element):
         """Converts parameters specific to the part"""
@@ -47,8 +63,6 @@ class PartConverter(ABC):
     def convert(self, part: ET.Element):
         """Converts the part from SP to SR2"""
         self.convert_common(part)
-        part.set('partType', self.partType)
-        self.add_drag(part)
         self.convert_specific(part)
         self.pop_attribs(part)
 
@@ -56,22 +70,11 @@ class PartConverter(ABC):
 class FuselageConverter(PartConverter):
     def __init__(self, scale):
         super().__init__(part_type='Fuselage1', scale=scale)
-        self.rotation_matrix = np.array([[1, 0, 0], [0, 0, -1], [0, 1, 0]])
+        self.prerotation_matrix = np.array([[1, 0, 0], [0, 0, -1], [0, 1, 0]])
         self.attribs.append('texture')
-
-    def rotate(self, angles: list):
-        angles = [n * np.pi/180 for n in angles]
-        M = euler2mat(*[angles[n] for n in (2, 0, 1)], 'szxy')
-        angles = mat2euler(np.matmul(M, self.rotation_matrix), 'szxy')
-        angles = [angles[n] * 180/np.pi for n in (1, 2, 0)]
-        return angles
 
     def convert_specific(self, part: ET.Element):
         part.set('texture', 'Default')
-
-        rotation = parse_numstr(part.get('rotation'))
-        rotation = self.rotate(rotation)
-        part.set('rotation', create_numstr(rotation))
 
         tank = part.find('FuelTank.State')
         tank.tag = 'FuelTank'
@@ -113,7 +116,7 @@ class NoseConeConverter(FuselageConverter):
     def __init__(self, scale):
         super().__init__(scale=scale)
         self.partType = 'NoseCone1'
-        self.rotation_matrix = np.array([[-1, 0, 0], [0, 0, -1], [0, -1, 0]])
+        self.prerotation_matrix = np.array([[-1, 0, 0], [0, 0, -1], [0, -1, 0]])
 
     def convert_specific(self, part: ET.Element):
         super().convert_specific(part)
