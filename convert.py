@@ -1,13 +1,13 @@
 import xml.etree.ElementTree as ET
 import uuid
 from utils import parse_numstr, create_numstr
-from converters import FuselageConverter, WingConverter, NoseConeConverter
+from converters import FuselageConverter, WingConverter, NoseConeConverter, InletConverter
 from command_pod import command_pod
 
 SCALE = 1
 
-INPUT_PATH = 'test_crafts/Bell X-1.xml'
-OUTPUT_PATH = './test_results/test68.xml'
+INPUT_PATH = '/Users/pasha/projects/SP-SR2-converter/test_crafts/BL-13.N11.1.1.xml'
+OUTPUT_PATH = './test_results/test71.xml'
 
 tree = ET.parse(INPUT_PATH)
 craft = tree.getroot()
@@ -36,7 +36,10 @@ parts = assembly.find('Parts')
 
 converters = {'Fuselage-Body-1': FuselageConverter(scale=SCALE),
               'Wing-3': WingConverter(scale=SCALE),
-              'Fuselage-Cone-1': NoseConeConverter(scale=SCALE)}
+              'Fuselage-Cone-1': NoseConeConverter(scale=SCALE),
+              'Fuselage-Inlet-1': InletConverter(scale=SCALE)}
+converters['Wing-2'] = converters['Wing-3']
+
 part_ids = set()
 for part in list(parts):
     if part.get('partType') not in converters:

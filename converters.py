@@ -77,8 +77,9 @@ class FuselageConverter(PartConverter):
         part.set('texture', 'Default')
 
         tank = part.find('FuelTank.State')
-        tank.tag = 'FuelTank'
-        tank.attrib.pop('fuel')
+        if tank is not None:
+            tank.tag = 'FuelTank'
+            tank.attrib.pop('fuel')
 
         fuselage = part.find('Fuselage.State')
         fuselage.tag = 'Fuselage'
@@ -136,6 +137,18 @@ class NoseConeConverter(FuselageConverter):
         offset = parse_numstr(fuselage.get('offset'))
         offset[2] *= -1
         fuselage.set('offset', create_numstr(offset))
+
+class InletConverter(FuselageConverter):
+    def __init__(self, scale):
+        super().__init__(scale=scale)
+        self.partType = 'Inlet1'
+
+    def convert_specific(self, part: ET.Element):
+        super().convert_specific(part)
+        fuselage = part.find('Fuselage')
+        for x in ['inletSlant', 'inletTrimSize',
+                  'inletThicknessFront', 'inletThicknessRear']:
+            fuselage.attrib.pop(x, None)
 
 class WingConverter(PartConverter):
     def __init__(self, scale):
