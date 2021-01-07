@@ -1,12 +1,11 @@
 import xml.etree.ElementTree as ET
 import uuid
+import io
+from typing import BinaryIO
 from utils import parse_numstr, create_numstr
 from part_converters import FuselageConverter, WingConverter, NoseConeConverter, InletConverter
 from command_pod import command_pod
-from typing import BinaryIO
-import io
 
-SCALE = 1
 
 CONVERTERS = {'Fuselage-Body-1': FuselageConverter(),
               'Wing-3': WingConverter(),
