@@ -1,17 +1,17 @@
 import xml.etree.ElementTree as ET
 import uuid
 from utils import parse_numstr, create_numstr
-from converters import FuselageConverter, WingConverter, NoseConeConverter, InletConverter
+from part_converters import FuselageConverter, WingConverter, NoseConeConverter, InletConverter
 from command_pod import command_pod
 from typing import BinaryIO
 import io
 
 SCALE = 1
 
-CONVERTERS = {'Fuselage-Body-1': FuselageConverter(scale=SCALE),
-              'Wing-3': WingConverter(scale=SCALE),
-              'Fuselage-Cone-1': NoseConeConverter(scale=SCALE),
-              'Fuselage-Inlet-1': InletConverter(scale=SCALE)}
+CONVERTERS = {'Fuselage-Body-1': FuselageConverter(),
+              'Wing-3': WingConverter(),
+              'Fuselage-Cone-1': NoseConeConverter(),
+              'Fuselage-Inlet-1': InletConverter()}
 CONVERTERS['Wing-2'] = CONVERTERS['Wing-3']
 
 def convert_craft_attribs(craft: ET.Element):
@@ -35,14 +35,14 @@ def convert_craft_attribs(craft: ET.Element):
     craft.set('initialBoundsMax', raw_boundsmax)
     ET.SubElement(craft, 'Symmetry')
 
-def convert_parts(assembly: ET.Element) -> set:
+def convert_parts(assembly: ET.Element, scale) -> set:
     parts = assembly.find('Parts')
     part_ids = set()
     for part in list(parts):
         if part.get('partType') in CONVERTERS:
             part_ids.add(part.get('id'))
             converter = CONVERTERS[part.get('partType')]
-            converter.convert(part)
+            converter.convert(part, scale)
         else:
             parts.remove(part)
     parts.insert(0, command_pod)
@@ -93,14 +93,14 @@ def convert_theme(craft: ET.Element):
     themes = ET.SubElement(craft, 'Themes')
     themes.append(theme)
 
-def handle_file(source: BinaryIO) -> BinaryIO:
+def handle_file(source: BinaryIO, scale=1) -> BinaryIO:
     tree = ET.parse(source)
     craft = tree.getroot()
     convert_craft_attribs(craft)
 
     assembly = craft.find('Assembly')
 
-    part_ids = convert_parts(assembly)
+    part_ids = convert_parts(assembly, scale)
     convert_connections(assembly, part_ids)
     convert_bodies(assembly, part_ids)
     convert_theme(craft)

@@ -6,9 +6,8 @@ from utils import parse_numstr, create_numstr
 
 
 class PartConverter(ABC):
-    def __init__(self, part_type, scale):
+    def __init__(self, part_type):
         self.partType = part_type
-        self.scale = scale
         self.attribs = ['id', 'partType', 'position',
                         'rotation', 'commandPodId', 'materials']
         self.prerotation_matrix = None
@@ -31,14 +30,14 @@ class PartConverter(ABC):
         raw_area = create_numstr(area)
         ET.SubElement(part, 'Drag', {'drag': raw_drag, 'area': raw_area})
 
-    def convert_common(self, part: ET.Element):
+    def convert_common(self, part: ET.Element, scale):
         """Converts parameters relevant to all parts"""
         part.set('commandPodId', '0')
         part.set('partType', self.partType)
 
-        if self.scale != 1:
+        if scale != 1:
             position = parse_numstr(part.get('position'))
-            position = [self.scale * x for x in position]
+            position = [scale * x for x in position]
             raw_position = create_numstr(position)
             part.set('position', raw_position)
 
@@ -52,7 +51,7 @@ class PartConverter(ABC):
 
         self.add_drag(part)
 
-    def convert_specific(self, part: ET.Element):
+    def convert_specific(self, part: ET.Element, scale):
         """Converts parameters specific to the part"""
         pass
 
@@ -60,20 +59,20 @@ class PartConverter(ABC):
         """Pops unnecessary attribs of the part"""
         part.attrib = {x: part.attrib[x] for x in part.attrib if x in self.attribs}
 
-    def convert(self, part: ET.Element):
+    def convert(self, part: ET.Element, scale=1):
         """Converts the part from SP to SR2"""
-        self.convert_common(part)
-        self.convert_specific(part)
+        self.convert_common(part, scale)
+        self.convert_specific(part, scale)
         self.pop_attribs(part)
 
 
 class FuselageConverter(PartConverter):
-    def __init__(self, scale):
-        super().__init__(part_type='Fuselage1', scale=scale)
+    def __init__(self):
+        super().__init__(part_type='Fuselage1')
         self.prerotation_matrix = np.array([[1, 0, 0], [0, 0, -1], [0, 1, 0]])
         self.attribs.append('texture')
 
-    def convert_specific(self, part: ET.Element):
+    def convert_specific(self, part: ET.Element, scale):
         part.set('texture', 'Default')
 
         tank = part.find('FuelTank.State')
@@ -86,12 +85,12 @@ class FuselageConverter(PartConverter):
 
         raw_bottom_scale = fuselage.get('rearScale')
         bottom_scale = parse_numstr(raw_bottom_scale)
-        bottom_scale = [self.scale * x/4 for x in bottom_scale]
+        bottom_scale = [scale * x/4 for x in bottom_scale]
         fuselage.set('bottomScale', create_numstr(bottom_scale))
 
         raw_top_scale = fuselage.get('frontScale')
         top_scale = parse_numstr(raw_top_scale)
-        top_scale = [self.scale * x/4 for x in top_scale]
+        top_scale = [scale * x/4 for x in top_scale]
         fuselage.set('topScale', create_numstr(top_scale))
 
         corner_tr = [0.0, 0.4, 1.0, 1.0]
@@ -103,7 +102,7 @@ class FuselageConverter(PartConverter):
         fuselage.set('cornerRadiuses', create_numstr(corner_types))
 
         offset = parse_numstr(fuselage.get('offset'))
-        offset = [self.scale * x/4 for x in offset]
+        offset = [scale * x/4 for x in offset]
         offset[1], offset[2] = offset[2], offset[1]
         offset[0] *= -1
         fuselage.set('offset', create_numstr(offset))
@@ -114,13 +113,13 @@ class FuselageConverter(PartConverter):
             fuselage.attrib.pop(x, None)
 
 class NoseConeConverter(FuselageConverter):
-    def __init__(self, scale):
-        super().__init__(scale=scale)
+    def __init__(self):
+        super().__init__()
         self.partType = 'NoseCone1'
         self.prerotation_matrix = np.array([[-1, 0, 0], [0, 0, -1], [0, -1, 0]])
 
-    def convert_specific(self, part: ET.Element):
-        super().convert_specific(part)
+    def convert_specific(self, part: ET.Element, scale):
+        super().convert_specific(part, scale)
 
         fuselage = part.find('Fuselage')
 
@@ -139,12 +138,12 @@ class NoseConeConverter(FuselageConverter):
         fuselage.set('offset', create_numstr(offset))
 
 class InletConverter(FuselageConverter):
-    def __init__(self, scale):
-        super().__init__(scale=scale)
+    def __init__(self):
+        super().__init__()
         self.partType = 'Inlet1'
 
-    def convert_specific(self, part: ET.Element):
-        super().convert_specific(part)
+    def convert_specific(self, part: ET.Element, scale):
+        super().convert_specific(part, scale)
         fuselage = part.find('Fuselage')
         for x in ['inletSlant', 'inletTrimSize',
                   'inletThicknessFront', 'inletThicknessRear']:
@@ -152,21 +151,21 @@ class InletConverter(FuselageConverter):
 
 class WingConverter(PartConverter):
     def __init__(self, scale):
-        super().__init__(part_type='Wing1', scale=scale)
+        super().__init__(part_type='Wing1')
 
-    def convert_specific(self, part: ET.Element):
+    def convert_specific(self, part: ET.Element, scale):
         tank = part.find('FuelTank.State')
         part.remove(tank)
 
         wing = part.find('Wing.State')
         wing.tag = 'Wing'
 
-        if self.scale != 1:
+        if scale != 1:
             for attrib_name in ('rootLeadingOffset', 'rootTrailingOffset',
                                 'tipLeadingOffset', 'tipPosition', 'tipTrailingOffset'):
                 raw_attrib = wing.get(attrib_name)
                 attrib_val = parse_numstr(raw_attrib)
-                attrib_val = [self.scale * x for x in attrib_val]
+                attrib_val = [scale * x for x in attrib_val]
                 wing.set(attrib_name, create_numstr(attrib_val))
 
         control_surfaces = wing.findall('ControlSurface')
@@ -174,11 +173,11 @@ class WingConverter(PartConverter):
             inp = surface.get('inputId')
             surface.set('input', inp)
             surface.attrib.pop('inputId', None)
-            if self.scale != 1:
+            if scale != 1:
                 for attrib_name in ('start', 'end'):
                     raw_attrib = surface.get(attrib_name)
                     attrib_val = parse_numstr(raw_attrib)
-                    attrib_val = [int(self.scale * x) for x in attrib_val]
+                    attrib_val = [int(scale * x) for x in attrib_val]
                     surface.set(attrib_name, create_numstr(attrib_val))
             wing.remove(surface)
         part.extend(control_surfaces)
