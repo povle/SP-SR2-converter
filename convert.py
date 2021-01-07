@@ -8,7 +8,7 @@ from convert_file import convert_file
 
 parser = argparse.ArgumentParser()
 group = parser.add_mutually_exclusive_group(required=True)
-group.add_argument('id', help='ID of the craft (https://www.simpleplanes.com/a/??????/)')
+group.add_argument('id', nargs='?', help='ID of the craft (https://www.simpleplanes.com/a/??????/)')
 group.add_argument('--input_file', '-i', type=argparse.FileType('rb'), help='path to the source craft xml')
 parser.add_argument('--scale', '-s', type=float, default=1, help='scale of the converted craft, recommended to be an integer')
 parser.add_argument('--output_file', '-o', type=argparse.FileType('wb'), help='path to the output file')
