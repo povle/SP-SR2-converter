@@ -35,11 +35,13 @@ class PartConverter(ABC):
         part.set('commandPodId', '0')
         part.set('partType', self.partType)
 
+        part_scale = parse_numstr(part.get('scale', '1,1,1'))
         if scale != 1:
             position = parse_numstr(part.get('position'))
             position = [scale * x for x in position]
             raw_position = create_numstr(position)
             part.set('position', raw_position)
+            part_scale = [scale * x for x in part_scale]
 
         if self.prerotation_matrix is not None:
             self.prerotate(part)
@@ -47,11 +49,13 @@ class PartConverter(ABC):
         materials = part.get('materials')
         part.set('materials', ','.join(materials.split(',')[0:1] * 5))
 
-        ET.SubElement(part, 'Config')
+        config = ET.SubElement(part, 'Config')
+        if part_scale != [1, 1, 1]:
+            config.set('partScale', create_numstr(part_scale))
 
         self.add_drag(part)
 
-    def convert_specific(self, part: ET.Element, scale):
+    def convert_specific(self, part: ET.Element):
         """Converts parameters specific to the part"""
         pass
 
@@ -62,7 +66,7 @@ class PartConverter(ABC):
     def convert(self, part: ET.Element, scale=1):
         """Converts the part from SP to SR2"""
         self.convert_common(part, scale)
-        self.convert_specific(part, scale)
+        self.convert_specific(part)
         self.pop_attribs(part)
 
 
@@ -72,8 +76,15 @@ class FuselageConverter(PartConverter):
         self.prerotation_matrix = np.array([[1, 0, 0], [0, 0, -1], [0, 1, 0]])
         self.attribs.append('texture')
 
-    def convert_specific(self, part: ET.Element, scale):
+    def convert_specific(self, part: ET.Element):
         part.set('texture', 'Default')
+
+        config = part.find('Config')
+        raw_part_scale = config.get('partScale')
+        if raw_part_scale:
+            part_scale = parse_numstr(raw_part_scale)
+            part_scale[1], part_scale[2] = part_scale[2], part_scale[1]
+            config.set('partScale', create_numstr(part_scale))
 
         tank = part.find('FuelTank.State')
         if tank is not None:
@@ -85,12 +96,12 @@ class FuselageConverter(PartConverter):
 
         raw_bottom_scale = fuselage.get('rearScale')
         bottom_scale = parse_numstr(raw_bottom_scale)
-        bottom_scale = [scale * x/4 for x in bottom_scale]
+        bottom_scale = [x/4 for x in bottom_scale]
         fuselage.set('bottomScale', create_numstr(bottom_scale))
 
         raw_top_scale = fuselage.get('frontScale')
         top_scale = parse_numstr(raw_top_scale)
-        top_scale = [scale * x/4 for x in top_scale]
+        top_scale = [x/4 for x in top_scale]
         fuselage.set('topScale', create_numstr(top_scale))
 
         corner_tr = [0.0, 0.4, 1.0, 1.0]
@@ -102,7 +113,7 @@ class FuselageConverter(PartConverter):
         fuselage.set('cornerRadiuses', create_numstr(corner_types))
 
         offset = parse_numstr(fuselage.get('offset'))
-        offset = [scale * x/4 for x in offset]
+        offset = [x/4 for x in offset]
         offset[1], offset[2] = offset[2], offset[1]
         offset[0] *= -1
         fuselage.set('offset', create_numstr(offset))
@@ -118,8 +129,8 @@ class NoseConeConverter(FuselageConverter):
         self.partType = 'NoseCone1'
         self.prerotation_matrix = np.array([[-1, 0, 0], [0, 0, -1], [0, -1, 0]])
 
-    def convert_specific(self, part: ET.Element, scale):
-        super().convert_specific(part, scale)
+    def convert_specific(self, part: ET.Element):
+        super().convert_specific(part)
 
         fuselage = part.find('Fuselage')
 
@@ -142,8 +153,8 @@ class InletConverter(FuselageConverter):
         super().__init__()
         self.partType = 'Inlet1'
 
-    def convert_specific(self, part: ET.Element, scale):
-        super().convert_specific(part, scale)
+    def convert_specific(self, part: ET.Element):
+        super().convert_specific(part)
         fuselage = part.find('Fuselage')
         for x in ['inletSlant', 'inletTrimSize',
                   'inletThicknessFront', 'inletThicknessRear']:
@@ -153,31 +164,17 @@ class WingConverter(PartConverter):
     def __init__(self):
         super().__init__(part_type='Wing1')
 
-    def convert_specific(self, part: ET.Element, scale):
+    def convert_specific(self, part: ET.Element):
         tank = part.find('FuelTank.State')
         part.remove(tank)
 
         wing = part.find('Wing.State')
         wing.tag = 'Wing'
 
-        if scale != 1:
-            for attrib_name in ('rootLeadingOffset', 'rootTrailingOffset',
-                                'tipLeadingOffset', 'tipPosition', 'tipTrailingOffset'):
-                raw_attrib = wing.get(attrib_name)
-                attrib_val = parse_numstr(raw_attrib)
-                attrib_val = [scale * x for x in attrib_val]
-                wing.set(attrib_name, create_numstr(attrib_val))
-
         control_surfaces = wing.findall('ControlSurface')
         for surface in control_surfaces:
             inp = surface.get('inputId')
             surface.set('input', inp)
             surface.attrib.pop('inputId', None)
-            if scale != 1:
-                for attrib_name in ('start', 'end'):
-                    raw_attrib = surface.get(attrib_name)
-                    attrib_val = parse_numstr(raw_attrib)
-                    attrib_val = [int(scale * x) for x in attrib_val]
-                    surface.set(attrib_name, create_numstr(attrib_val))
             wing.remove(surface)
         part.extend(control_surfaces)
