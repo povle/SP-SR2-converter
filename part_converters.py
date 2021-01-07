@@ -73,6 +73,11 @@ class BlockConverter(PartConverter):
     def __init__(self):
         super().__init__(part_type='Block1')
 
+    def convert_specific(self, part: ET.Element):
+        adaptive_block = part.find('AdaptiveBlock.State')
+        if adaptive_block is not None:
+            part.remove(adaptive_block)
+
 class FuselageConverter(PartConverter):
     def __init__(self):
         super().__init__(part_type='Fuselage1')
