@@ -14,7 +14,7 @@ CONVERTERS = {'Fuselage-Body-1': FuselageConverter(),
               'Fuselage-Inlet-1': InletConverter()}
 CONVERTERS['Wing-2'] = CONVERTERS['Wing-3']
 
-def convert_craft_attribs(craft: ET.Element):
+def convert_craft(craft: ET.Element):
     craft.tag = 'Craft'
     craft.attrib.pop('url')
     craft.attrib.pop('theme')
@@ -96,7 +96,7 @@ def convert_theme(craft: ET.Element):
 def convert_file(source: BinaryIO, scale=1) -> BinaryIO:
     tree = ET.parse(source)
     craft = tree.getroot()
-    convert_craft_attribs(craft)
+    convert_craft(craft)
 
     assembly = craft.find('Assembly')
 
