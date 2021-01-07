@@ -29,7 +29,6 @@ else:
         output_name = os.path.splitext(output_name)[0]+'_SR.xml'
         output_file = open(output_name, 'wb')
 
-with input_file as i:
+with input_file as i, output_file as o:
     converted = convert_file(i, scale=args.scale)
-    with output_file as o:
-        shutil.copyfileobj(converted, o)
+    shutil.copyfileobj(converted, o)
