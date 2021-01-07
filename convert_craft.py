@@ -93,7 +93,7 @@ def convert_theme(craft: ET.Element):
     themes = ET.SubElement(craft, 'Themes')
     themes.append(theme)
 
-def handle_file(source: BinaryIO, scale=1) -> BinaryIO:
+def convert_file(source: BinaryIO, scale=1) -> BinaryIO:
     tree = ET.parse(source)
     craft = tree.getroot()
     convert_craft_attribs(craft)
