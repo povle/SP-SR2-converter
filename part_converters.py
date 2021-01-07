@@ -7,7 +7,7 @@ from utils import parse_numstr, create_numstr
 
 class PartConverter(ABC):
     def __init__(self, part_type):
-        self.partType = part_type
+        self.part_type = part_type
         self.attribs = ['id', 'partType', 'position',
                         'rotation', 'commandPodId', 'materials']
         self.prerotation_matrix = None
@@ -33,7 +33,7 @@ class PartConverter(ABC):
     def convert_common(self, part: ET.Element, scale):
         """Converts parameters relevant to all parts"""
         part.set('commandPodId', '0')
-        part.set('partType', self.partType)
+        part.set('partType', self.part_type)
 
         part_scale = parse_numstr(part.get('scale', '1,1,1'))
         if scale != 1:
@@ -126,7 +126,7 @@ class FuselageConverter(PartConverter):
 class NoseConeConverter(FuselageConverter):
     def __init__(self):
         super().__init__()
-        self.partType = 'NoseCone1'
+        self.part_type = 'NoseCone1'
         self.prerotation_matrix = np.array([[-1, 0, 0], [0, 0, -1], [0, -1, 0]])
 
     def convert_specific(self, part: ET.Element):
@@ -151,7 +151,7 @@ class NoseConeConverter(FuselageConverter):
 class InletConverter(FuselageConverter):
     def __init__(self):
         super().__init__()
-        self.partType = 'Inlet1'
+        self.part_type = 'Inlet1'
 
     def convert_specific(self, part: ET.Element):
         super().convert_specific(part)
