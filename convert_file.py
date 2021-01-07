@@ -106,4 +106,5 @@ def convert_file(source: BinaryIO, scale=1) -> BinaryIO:
 
     output = io.BytesIO()
     tree.write(output, encoding='utf-8', xml_declaration=True)
+    output.seek(0)
     return output
