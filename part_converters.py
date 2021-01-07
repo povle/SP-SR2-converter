@@ -150,7 +150,7 @@ class InletConverter(FuselageConverter):
             fuselage.attrib.pop(x, None)
 
 class WingConverter(PartConverter):
-    def __init__(self, scale):
+    def __init__(self):
         super().__init__(part_type='Wing1')
 
     def convert_specific(self, part: ET.Element, scale):
