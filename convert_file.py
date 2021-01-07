@@ -3,15 +3,9 @@ import uuid
 import io
 from typing import BinaryIO
 from utils import parse_numstr, create_numstr
-from part_converters import FuselageConverter, WingConverter, NoseConeConverter, InletConverter
+from part_converters import CONVERTERS
 from command_pod import command_pod
 
-
-CONVERTERS = {'Fuselage-Body-1': FuselageConverter(),
-              'Wing-3': WingConverter(),
-              'Fuselage-Cone-1': NoseConeConverter(),
-              'Fuselage-Inlet-1': InletConverter()}
-CONVERTERS['Wing-2'] = CONVERTERS['Wing-3']
 
 def convert_craft(craft: ET.Element):
     craft.tag = 'Craft'

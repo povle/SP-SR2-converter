@@ -178,3 +178,11 @@ class WingConverter(PartConverter):
             surface.attrib.pop('inputId', None)
             wing.remove(surface)
         part.extend(control_surfaces)
+
+
+CONVERTERS = {'Fuselage-Body-1': FuselageConverter(),
+              'Wing-3': WingConverter(),
+              'Fuselage-Cone-1': NoseConeConverter(),
+              'Fuselage-Inlet-1': InletConverter()}
+CONVERTERS['Wing-2'] = CONVERTERS['Wing-3']
+CONVERTERS['Fuselage-Hollow-1'] = CONVERTERS['Fuselage-Body-1'] # an inlet would be better but attachment points won't translate well
