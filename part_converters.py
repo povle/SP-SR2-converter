@@ -69,6 +69,9 @@ class PartConverter(ABC):
         self.convert_specific(part)
         self.pop_attribs(part)
 
+class BlockConverter(PartConverter):
+    def __init__(self):
+        super().__init__(part_type='Block1')
 
 class FuselageConverter(PartConverter):
     def __init__(self):
@@ -183,6 +186,8 @@ class WingConverter(PartConverter):
 CONVERTERS = {'Fuselage-Body-1': FuselageConverter(),
               'Wing-3': WingConverter(),
               'Fuselage-Cone-1': NoseConeConverter(),
-              'Fuselage-Inlet-1': InletConverter()}
+              'Fuselage-Inlet-1': InletConverter(),
+              'Block-1': BlockConverter()}
 CONVERTERS['Wing-2'] = CONVERTERS['Wing-3']
 CONVERTERS['Fuselage-Hollow-1'] = CONVERTERS['Fuselage-Body-1'] # an inlet would be better but attachment points won't translate well
+CONVERTERS['Block-2'] = CONVERTERS['Block-1']
