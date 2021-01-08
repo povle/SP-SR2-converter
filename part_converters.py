@@ -190,6 +190,7 @@ class WingConverter(PartConverter):
 class AbstractRotatorConverter(PartConverter):
     def __init__(self, part_type):
         super().__init__(part_type=part_type)
+        self.attribs.append('activationGroup')
         self.inputs = {'VTOL': 'Slider1', 'Trim': 'Slider2'}
 
     def convert_input_controller(self, part: ET.Element, input_id: str):
@@ -199,6 +200,11 @@ class AbstractRotatorConverter(PartConverter):
         raw_input = self.inputs.get(raw_input, raw_input)
         input_controller.set('input', raw_input)
         input_controller.set('inputId', input_id)
+
+        activation_group = input_controller.get('activationGroup')
+        if activation_group:
+            part.set('activationGroup', activation_group)
+            input_controller.attrib.pop('activationGroup')
 
     def convert_specific(self, part: ET.Element):
         raise NotImplementedError
