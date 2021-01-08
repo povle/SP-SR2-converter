@@ -154,8 +154,8 @@ class NoseConeConverter(FuselageConverter):
     def __init__(self):
         super().__init__()
         self.part_type = 'NoseCone1'
-        self.prerotation_matrix = np.array([[1, 0, 0],
-                                            [0, 0, 1],
+        self.prerotation_matrix = np.array([[-1, 0, 0],
+                                            [0, 0, -1],
                                             [0, -1, 0]])
 
     def convert_specific(self, part: ET.Element):
@@ -174,7 +174,7 @@ class NoseConeConverter(FuselageConverter):
         fuselage.set('cornerRadiuses', create_numstr(corner_radiuses))
 
         offset = parse_numstr(fuselage.get('offset'))
-        offset[1] *= -1
+        offset = [-x for x in offset]
         fuselage.set('offset', create_numstr(offset))
 
 class InletConverter(FuselageConverter):
@@ -250,6 +250,7 @@ class SmallRotatorConverter(AbstractRotatorConverter):
         self.convert_input_controller(part, 'Rotator')
         joint_rotator = part.find('JointRotator.State')
         joint_rotator.tag = 'JointRotator'
+        joint_rotator.set('baseMode', 'None')
 
 class HingeRotatorConverter(SmallRotatorConverter):
     def __init__(self):
