@@ -21,6 +21,17 @@ class PartConverter(ABC):
         angles = [angles[n] * 180/np.pi for n in (1, 2, 0)]
         part.set('rotation', create_numstr(angles))
 
+    def scale_part(self, part: ET.Element, scale):
+        """Scale the part"""
+        part_scale = parse_numstr(part.get('scale', '1,1,1'))
+        part_scale = [scale * x for x in part_scale]
+        if self.prerotation_matrix is not None:
+            part_scale = np.array(part_scale)
+            part_scale = np.matmul(self.prerotation_matrix, part_scale)
+            part_scale = [abs(x) for x in part_scale.tolist()]
+        if part_scale != [1, 1, 1]:
+            part.find('Config').set('partScale', create_numstr(part_scale))
+
     @staticmethod
     def add_drag(part: ET.Element):
         """Adds drag to the part"""
@@ -35,13 +46,11 @@ class PartConverter(ABC):
         part.set('commandPodId', '0')
         part.set('partType', self.part_type)
 
-        part_scale = parse_numstr(part.get('scale', '1,1,1'))
         if scale != 1:
             position = parse_numstr(part.get('position'))
             position = [scale * x for x in position]
             raw_position = create_numstr(position)
             part.set('position', raw_position)
-            part_scale = [scale * x for x in part_scale]
 
         if self.prerotation_matrix is not None:
             self.prerotate(part)
@@ -49,10 +58,8 @@ class PartConverter(ABC):
         materials = part.get('materials')
         part.set('materials', ','.join(materials.split(',')[0:1] * 5))
 
-        config = ET.SubElement(part, 'Config')
-        if part_scale != [1, 1, 1]:
-            config.set('partScale', create_numstr(part_scale))
-
+        ET.SubElement(part, 'Config')
+        self.scale_part(part, scale)
         self.add_drag(part)
 
     def convert_specific(self, part: ET.Element):
@@ -86,13 +93,6 @@ class FuselageConverter(PartConverter):
 
     def convert_specific(self, part: ET.Element):
         part.set('texture', 'Default')
-
-        config = part.find('Config')
-        raw_part_scale = config.get('partScale')
-        if raw_part_scale:
-            part_scale = parse_numstr(raw_part_scale)
-            part_scale[1], part_scale[2] = part_scale[2], part_scale[1]
-            config.set('partScale', create_numstr(part_scale))
 
         tank = part.find('FuelTank.State')
         if tank is not None:
@@ -228,13 +228,6 @@ class SmallRotatorConverter(AbstractRotatorConverter):
         joint_rotator = part.find('JointRotator.State')
         joint_rotator.tag = 'JointRotator'
 
-        config = part.find('Config')
-        raw_part_scale = config.get('partScale')
-        if raw_part_scale:
-            part_scale = parse_numstr(raw_part_scale)
-            part_scale[1], part_scale[2] = part_scale[2], part_scale[1]
-            config.set('partScale', create_numstr(part_scale))
-
 class HingeRotatorConverter(AbstractRotatorConverter):
     def __init__(self):
         super().__init__(part_type='HingeRotator1')
@@ -244,13 +237,6 @@ class HingeRotatorConverter(AbstractRotatorConverter):
         self.convert_input_controller(part, 'Rotator')
         joint_rotator = part.find('JointRotator.State')
         joint_rotator.tag = 'JointRotator'
-
-        config = part.find('Config')
-        raw_part_scale = config.get('partScale')
-        if raw_part_scale:
-            part_scale = parse_numstr(raw_part_scale)
-            part_scale[0], part_scale[1], part_scale[2] = part_scale[1], part_scale[2], part_scale[0]
-            config.set('partScale', create_numstr(part_scale))
 
 
 CONVERTERS = {'Fuselage-Body-1': FuselageConverter(),
