@@ -187,23 +187,64 @@ class WingConverter(PartConverter):
             wing.remove(surface)
         part.extend(control_surfaces)
 
-class PistonConverter(PartConverter):
-    def __init__(self):
-        super().__init__(part_type='Piston1')
+class AbstractRotatorConverter(PartConverter):
+    def __init__(self, part_type):
+        super().__init__(part_type=part_type)
         self.inputs = {'VTOL': 'Slider1', 'Trim': 'Slider2'}
 
-    def convert_input_controller(self, part: ET.Element):
+    def convert_input_controller(self, part: ET.Element, input_id: str):
         input_controller = part.find('InputController.State')
         input_controller.tag = 'InputController'
         raw_input = input_controller.get('input')
         raw_input = self.inputs.get(raw_input, raw_input)
         input_controller.set('input', raw_input)
-        input_controller.set('inputId', 'Piston')
+        input_controller.set('inputId', input_id)
 
     def convert_specific(self, part: ET.Element):
+        raise NotImplementedError
+
+class PistonConverter(AbstractRotatorConverter):
+    def __init__(self):
+        super().__init__(part_type='Piston1')
+
+    def convert_specific(self, part: ET.Element):
+        self.convert_input_controller(part, 'Piston')
         piston = part.find('Piston.State')
         piston.tag = 'Piston'
-        self.convert_input_controller(part)
+
+class SmallRotatorConverter(AbstractRotatorConverter):
+    def __init__(self):
+        super().__init__(part_type='Rotator1')
+        self.prerotation_matrix = np.array([[1, 0, 0], [0, 0, -1], [0, 1, 0]])
+
+    def convert_specific(self, part: ET.Element):
+        self.convert_input_controller(part, 'Rotator')
+        joint_rotator = part.find('JointRotator.State')
+        joint_rotator.tag = 'JointRotator'
+
+        config = part.find('Config')
+        raw_part_scale = config.get('partScale')
+        if raw_part_scale:
+            part_scale = parse_numstr(raw_part_scale)
+            part_scale[1], part_scale[2] = part_scale[2], part_scale[1]
+            config.set('partScale', create_numstr(part_scale))
+
+class HingeRotatorConverter(AbstractRotatorConverter):
+    def __init__(self):
+        super().__init__(part_type='HingeRotator1')
+        self.prerotation_matrix = np.array([[0, 0, 1], [1, 0, 0], [0, 1, 0]])
+
+    def convert_specific(self, part: ET.Element):
+        self.convert_input_controller(part, 'Rotator')
+        joint_rotator = part.find('JointRotator.State')
+        joint_rotator.tag = 'JointRotator'
+
+        config = part.find('Config')
+        raw_part_scale = config.get('partScale')
+        if raw_part_scale:
+            part_scale = parse_numstr(raw_part_scale)
+            part_scale[0], part_scale[1], part_scale[2] = part_scale[1], part_scale[2], part_scale[0]
+            config.set('partScale', create_numstr(part_scale))
 
 
 CONVERTERS = {'Fuselage-Body-1': FuselageConverter(),
@@ -211,7 +252,9 @@ CONVERTERS = {'Fuselage-Body-1': FuselageConverter(),
               'Fuselage-Cone-1': NoseConeConverter(),
               'Fuselage-Inlet-1': InletConverter(),
               'Block-1': BlockConverter(),
-              'Piston': PistonConverter()}
+              'Piston': PistonConverter(),
+              'SmallRotator-1': SmallRotatorConverter(),
+              'HingeRotator-1': HingeRotatorConverter()}
 CONVERTERS['Wing-2'] = CONVERTERS['Wing-3']
 CONVERTERS['Fuselage-Hollow-1'] = CONVERTERS['Fuselage-Body-1'] # an inlet would be better but attachment points won't translate well
 CONVERTERS['Block-2'] = CONVERTERS['Block-1']
