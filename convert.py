@@ -12,6 +12,12 @@ group.add_argument('id', nargs='?', help='ID of the craft (https://www.simplepla
 group.add_argument('--input_file', '-i', type=argparse.FileType('rb'), help='path to the source craft xml')
 parser.add_argument('--scale', '-s', type=float, default=1, help='scale of the converted craft')
 parser.add_argument('--output_file', '-o', type=argparse.FileType('wb'), help='path to the output file')
+group2 = parser.add_mutually_exclusive_group()
+group2.add_argument('--only_ids', nargs='*', metavar='id', help='convert only parts with given ids')
+group2.add_argument('--exclude_ids', nargs='*', metavar='id', default=[], help='ignore parts with given ids')
+group3 = parser.add_mutually_exclusive_group()
+group3.add_argument('--only_types', nargs='*', metavar='SP_type', help='convert only parts with given types')
+group3.add_argument('--exclude_types', nargs='*', metavar='SP_type', default=[], help='ignore parts with given types')
 args = parser.parse_args()
 
 output_file = args.output_file or None
@@ -30,5 +36,5 @@ else:
         output_file = open(output_name, 'wb')
 
 with input_file as i, output_file as o:
-    converted = convert_file(i, scale=args.scale)
+    converted = convert_file(i, args)
     shutil.copyfileobj(converted, o)

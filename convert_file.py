@@ -28,16 +28,22 @@ def convert_craft(craft: ET.Element):
     craft.set('initialBoundsMax', raw_boundsmax)
     ET.SubElement(craft, 'Symmetry')
 
-def convert_parts(assembly: ET.Element, scale) -> set:
+def convert_parts(assembly: ET.Element, args) -> set:
     parts = assembly.find('Parts')
     part_ids = set()
     for part in list(parts):
-        if part.get('partType') in CONVERTERS:
-            part_ids.add(part.get('id'))
-            converter = CONVERTERS[part.get('partType')]
-            converter.convert(part, scale)
-        else:
+        part_type = part.get('partType')
+        part_id = part.get('id')
+        if part_type not in CONVERTERS or\
+           part_type in args.exclude_types or\
+           args.only_types and part_type not in args.only_types or\
+           part_id in args.exclude_ids or\
+           args.only_ids and part_id not in args.only_ids:
             parts.remove(part)
+            continue
+        part_ids.add(part_id)
+        converter = CONVERTERS[part_type]
+        converter.convert(part, args.scale or 1)
     parts.insert(0, command_pod)
     return part_ids
 
@@ -86,14 +92,14 @@ def convert_theme(craft: ET.Element):
     themes = ET.SubElement(craft, 'Themes')
     themes.append(theme)
 
-def convert_file(source: BinaryIO, scale=1) -> BinaryIO:
+def convert_file(source: BinaryIO, args) -> BinaryIO:
     tree = ET.parse(source)
     craft = tree.getroot()
     convert_craft(craft)
 
     assembly = craft.find('Assembly')
 
-    part_ids = convert_parts(assembly, scale)
+    part_ids = convert_parts(assembly, args)
     convert_connections(assembly, part_ids)
     convert_bodies(assembly, part_ids)
     convert_theme(craft)
