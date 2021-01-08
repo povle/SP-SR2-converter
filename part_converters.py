@@ -12,6 +12,18 @@ class PartConverter(ABC):
                         'rotation', 'commandPodId', 'materials']
         self.prerotation_matrix = None
 
+    @property
+    def prerotation_matrix(self):
+        return self._prerotation_matrix
+
+    @prerotation_matrix.setter
+    def prerotation_matrix(self, value):
+        self._prerotation_matrix = value
+        if value is None:
+            self.inverse_matrix = None
+        else:
+            self.inverse_matrix = np.linalg.inv(value)
+
     def prerotate(self, part: ET.Element):
         """Prerotate the part to match the orientation"""
         angles = parse_numstr(part.get('rotation'))
@@ -21,14 +33,18 @@ class PartConverter(ABC):
         angles = [angles[n] * 180/np.pi for n in (1, 2, 0)]
         part.set('rotation', create_numstr(angles))
 
+    def rotate_list(self, L: list) -> list:
+        """Rotate list as vector by inverse prerotation matrix"""
+        L = np.array(L)
+        L = np.matmul(self.inverse_matrix, L)
+        return L.tolist()
+
     def scale_part(self, part: ET.Element, scale):
         """Scale the part"""
         part_scale = parse_numstr(part.get('scale', '1,1,1'))
         part_scale = [scale * x for x in part_scale]
-        if self.prerotation_matrix is not None:
-            part_scale = np.array(part_scale)
-            part_scale = np.matmul(self.prerotation_matrix, part_scale)
-            part_scale = [abs(x) for x in part_scale.tolist()]
+        if self.inverse_matrix is not None:
+            part_scale = [abs(x) for x in self.rotate_list(part_scale)]
         if part_scale != [1, 1, 1]:
             part.find('Config').set('partScale', create_numstr(part_scale))
 
@@ -88,7 +104,9 @@ class BlockConverter(PartConverter):
 class FuselageConverter(PartConverter):
     def __init__(self):
         super().__init__(part_type='Fuselage1')
-        self.prerotation_matrix = np.array([[1, 0, 0], [0, 0, -1], [0, 1, 0]])
+        self.prerotation_matrix = np.array([[1, 0, 0],
+                                            [0, 0, -1],
+                                            [0, 1, 0]])
         self.attribs.append('texture')
 
     def convert_specific(self, part: ET.Element):
@@ -122,8 +140,9 @@ class FuselageConverter(PartConverter):
 
         offset = parse_numstr(fuselage.get('offset'))
         offset = [x/4 for x in offset]
-        offset[1], offset[2] = offset[2], offset[1]
-        offset[0] *= -1
+        offset[0] *= -1 # offsets in SP are backwards for some reason
+        offset[1] *= -1
+        offset = self.rotate_list(offset)
         fuselage.set('offset', create_numstr(offset))
 
         for x in ['version', 'rearScale', 'frontScale',
@@ -135,7 +154,9 @@ class NoseConeConverter(FuselageConverter):
     def __init__(self):
         super().__init__()
         self.part_type = 'NoseCone1'
-        self.prerotation_matrix = np.array([[-1, 0, 0], [0, 0, -1], [0, -1, 0]])
+        self.prerotation_matrix = np.array([[1, 0, 0],
+                                            [0, 0, 1],
+                                            [0, -1, 0]])
 
     def convert_specific(self, part: ET.Element):
         super().convert_specific(part)
@@ -153,7 +174,7 @@ class NoseConeConverter(FuselageConverter):
         fuselage.set('cornerRadiuses', create_numstr(corner_radiuses))
 
         offset = parse_numstr(fuselage.get('offset'))
-        offset[2] *= -1
+        offset[1] *= -1
         fuselage.set('offset', create_numstr(offset))
 
 class InletConverter(FuselageConverter):
