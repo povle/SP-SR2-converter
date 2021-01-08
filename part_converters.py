@@ -251,17 +251,13 @@ class SmallRotatorConverter(AbstractRotatorConverter):
         joint_rotator = part.find('JointRotator.State')
         joint_rotator.tag = 'JointRotator'
 
-class HingeRotatorConverter(AbstractRotatorConverter):
+class HingeRotatorConverter(SmallRotatorConverter):
     def __init__(self):
-        super().__init__(part_type='HingeRotator1')
+        super().__init__()
+        self.part_type = 'HingeRotator1'
         self.prerotation_matrix = np.array([[0, 0, 1],
                                             [1, 0, 0],
                                             [0, 1, 0]])
-
-    def convert_specific(self, part: ET.Element):
-        self.convert_input_controller(part, 'Rotator')
-        joint_rotator = part.find('JointRotator.State')
-        joint_rotator.tag = 'JointRotator'
 
 
 CONVERTERS = {'Fuselage-Body-1': FuselageConverter(),
