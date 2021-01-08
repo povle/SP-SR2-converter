@@ -187,12 +187,31 @@ class WingConverter(PartConverter):
             wing.remove(surface)
         part.extend(control_surfaces)
 
+class PistonConverter(PartConverter):
+    def __init__(self):
+        super().__init__(part_type='Piston1')
+        self.inputs = {'VTOL': 'Slider1', 'Trim': 'Slider2'}
+
+    def convert_input_controller(self, part: ET.Element):
+        input_controller = part.find('InputController.State')
+        input_controller.tag = 'InputController'
+        raw_input = input_controller.get('input')
+        raw_input = self.inputs.get(raw_input, raw_input)
+        input_controller.set('input', raw_input)
+        input_controller.set('inputId', 'Piston')
+
+    def convert_specific(self, part: ET.Element):
+        piston = part.find('Piston.State')
+        piston.tag = 'Piston'
+        self.convert_input_controller(part)
+
 
 CONVERTERS = {'Fuselage-Body-1': FuselageConverter(),
               'Wing-3': WingConverter(),
               'Fuselage-Cone-1': NoseConeConverter(),
               'Fuselage-Inlet-1': InletConverter(),
-              'Block-1': BlockConverter()}
+              'Block-1': BlockConverter(),
+              'Piston': PistonConverter()}
 CONVERTERS['Wing-2'] = CONVERTERS['Wing-3']
 CONVERTERS['Fuselage-Hollow-1'] = CONVERTERS['Fuselage-Body-1'] # an inlet would be better but attachment points won't translate well
 CONVERTERS['Block-2'] = CONVERTERS['Block-1']
