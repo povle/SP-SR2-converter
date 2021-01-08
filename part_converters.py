@@ -242,7 +242,9 @@ class PistonConverter(AbstractRotatorConverter):
 class SmallRotatorConverter(AbstractRotatorConverter):
     def __init__(self):
         super().__init__(part_type='Rotator1')
-        self.prerotation_matrix = np.array([[1, 0, 0], [0, 0, -1], [0, 1, 0]])
+        self.prerotation_matrix = np.array([[1, 0, 0],
+                                            [0, 0, -1],
+                                            [0, 1, 0]])
 
     def convert_specific(self, part: ET.Element):
         self.convert_input_controller(part, 'Rotator')
@@ -252,7 +254,9 @@ class SmallRotatorConverter(AbstractRotatorConverter):
 class HingeRotatorConverter(AbstractRotatorConverter):
     def __init__(self):
         super().__init__(part_type='HingeRotator1')
-        self.prerotation_matrix = np.array([[0, 0, 1], [1, 0, 0], [0, 1, 0]])
+        self.prerotation_matrix = np.array([[0, 0, 1],
+                                            [1, 0, 0],
+                                            [0, 1, 0]])
 
     def convert_specific(self, part: ET.Element):
         self.convert_input_controller(part, 'Rotator')
