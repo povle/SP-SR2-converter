@@ -1,12 +1,13 @@
 # SimplePlanes to SimpleRockets 2 craft converter
-Converts crafts from SimplePlanes to SimpleRockets 2. Many parts can't currently be converted (e.g. engines, see "Supported Parts") and some are converted poorly (see "Known Issues"), so some post-processing will be needed.
+![conversion result](images/craft.png)
+Converts crafts from SimplePlanes to SimpleRockets 2. Many parts can't currently be converted (e.g. engines, see [Supported Parts](#supported-parts)) and some are converted poorly (see [Known Issues](#known-issues)), so some post-processing will be needed.
 Was tested with Python 3.8.5, should work with Python 3.6+.
 
 ## Installation
 
 ```console
-$ git clone https://github.com/povle/sp-sr2-converter.git
-$ cd sp-sr2-converter
+$ git clone https://github.com/povle/SP-SR2-converter.git
+$ cd SP-SR2-converter
 $ python3 -m pip install -r requirements.txt
 ```
 
@@ -75,3 +76,6 @@ $ python3 convert.py -i crafts/ILUHA.xml -s 2
  - Fuselage inlets can't be converted properly because they are a lot more customizable in SP.
 
 If the converted craft does not load, you should try again with the dev console open and read the error messages. In some cases removing troublesome parts when converting (`--exclude-ids` option) can help.
+
+## Acknowledgements
+A huge thanks to [LegendaryBottle](https://www.simpleplanes.com/u/LegendaryBottle) for allowing to use his awesome [Ilya Muromets replica](https://www.simpleplanes.com/a/bAMO2A/Ilya-Muromets) as an example.
