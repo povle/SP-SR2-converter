@@ -12,24 +12,25 @@ $ python3 -m pip install -r requirements.txt
 ```
 
 ## Usage
-
+You can either use the GUI (simply run `convert.py` without any arguments) or the CLI:
 ```console
 $ python3 convert.py --help
-usage: convert.py [-h] [--input_file INPUT_FILE]|[id] [--scale SCALE] [--output_file OUTPUT_FILE]
-                  [--only_ids [part_id [part_id ...]] | --exclude_ids [part_id [part_id ...]]]
-                  [--only_types [SP_type [SP_type ...]] | --exclude_types [SP_type [SP_type ...]]]
-
-positional arguments:
-  id                    ID of the craft (https://www.simpleplanes.com/a/??????/)
+usage: convert.py [-h] (--input_file INPUT_FILE | --id ID) [--output_file OUTPUT_FILE] [--scale SCALE] [--only_ids [part_id [part_id ...]] |
+                  --exclude_ids [part_id [part_id ...]]] [--only_types [SP_type [SP_type ...]] | --exclude_types [SP_type [SP_type ...]]]
 
 optional arguments:
   -h, --help            show this help message and exit
+
+Basic Options:
   --input_file INPUT_FILE, -i INPUT_FILE
                         path to the source craft xml
-  --scale SCALE, -s SCALE
-                        scale of the converted craft
+  --id ID               ID of the craft (https://www.simpleplanes.com/a/??????/)
   --output_file OUTPUT_FILE, -o OUTPUT_FILE
                         path to the output file
+
+Advanced Options:
+  --scale SCALE, -s SCALE
+                        scale of the converted craft
   --only_ids [part_id [part_id ...]]
                         convert only parts with given ids
   --exclude_ids [part_id [part_id ...]]
@@ -43,13 +44,13 @@ optional arguments:
 
 ```console
 # convert https://www.simpleplanes.com/a/bAMO2A/Ilya-Muromets, save to bAMO2A_SR.xml
-$ python3 convert.py bAMO2A
+$ python3 convert.py --id bAMO2A
 
 # convert the same craft but only fuselage blocks and fuselage cones
-$ python3 convert.py bAMO2A --only_types Fuselage-Body-1 Fuselage-Cone-1
+$ python3 convert.py --id bAMO2A --only_types Fuselage-Body-1 Fuselage-Cone-1
 
 # convert the same craft but ignore parts with ids 3, 4, 5
-$ python3 convert.py bAMO2A --exclude_ids 3 4 5
+$ python3 convert.py --id bAMO2A --exclude_ids 3 4 5
 
 # convert crafts/ILUHA.xml, scale it by the factor of 2
 $ python3 convert.py -i crafts/ILUHA.xml -s 2
