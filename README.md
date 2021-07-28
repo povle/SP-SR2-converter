@@ -4,7 +4,9 @@ Converts crafts from SimplePlanes to SimpleRockets 2. Many parts can't currently
 Was tested with Python 3.8.5, should work with Python 3.6+.
 
 ## Installation
+On Windows you can simply download the executable (it's under "Releases" on the right side of the page) and run it. 
 
+On other systems you will need to install Python 3 and do the following:
 ```console
 $ git clone https://github.com/povle/SP-SR2-converter.git
 $ cd SP-SR2-converter
